@@ -21,7 +21,6 @@ func GetLatestBlock() (string, error) {
 	return evmos_client.GetBlockNumber()
 }
 
-// TODO not really utilized.
 func GetTransactionTrace(txHash string) (map[string]interface{}, error) {
 	return evmos_client.GetTransactionTrace(txHash)
 }
@@ -41,9 +40,10 @@ func ExtractSmartContracts(blocks []map[string]interface{}) (map[string]int, err
 		transactions := block["transactions"].([]interface{})
 		for _, tx := range transactions {
 			txMap := tx.(map[string]interface{})
+			txHash := txMap["hash"].(string)
 			to := txMap["to"]
 
-			// Check if it's a contract creation
+			// it's a contract creation
 			if to == nil {
 				contractAddress := txMap["contractAddress"]
 				if contractAddress != nil && contractAddress != "" {
@@ -51,7 +51,6 @@ func ExtractSmartContracts(blocks []map[string]interface{}) (map[string]int, err
 					contractInteractions[contractAddrStr]++
 				}
 			} else {
-				// If it's not a contract creation, check if 'to' address is a smart contract
 				toAddress := to.(string)
 				isContract, err := IsContractAddress(toAddress)
 				if err != nil {
@@ -60,6 +59,21 @@ func ExtractSmartContracts(blocks []map[string]interface{}) (map[string]int, err
 				if isContract {
 					contractInteractions[toAddress]++
 				}
+			}
+
+			// Add internal contract interactions via transaction trace
+			trace, err := GetTransactionTrace(txHash)
+			if err != nil {
+				return nil, err
+			}
+
+			// TODO: assuming trace["calls"] is always present.
+			// Not sure since every block has empty transaction list and as such couldn't test this.
+			internalCalls := trace["calls"].([]interface{})
+			for _, call := range internalCalls {
+				callMap := call.(map[string]interface{})
+				contractAddress := callMap["to"].(string)
+				contractInteractions[contractAddress]++
 			}
 		}
 	}
@@ -88,7 +102,7 @@ func ExtractWallets(blocks []map[string]interface{}) []string {
 					continue
 				}
 
-				// check if it is an EOA
+				// it's an EOA (not a contract)
 				if !isContract {
 					wallets[toAddress] = struct{}{}
 				}
@@ -114,6 +128,7 @@ func GetSmartContracts(startBlock, endBlock int) ([]kv, error) {
 		return nil, err
 	}
 
+	// Sort contracts by number of interactions
 	var sortedContracts []kv
 	for k, v := range contractInteractions {
 		sortedContracts = append(sortedContracts, kv{k, big.NewInt(int64(v))})
