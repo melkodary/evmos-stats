@@ -73,9 +73,25 @@ func ExtractWallets(blocks []map[string]interface{}) []string {
 		transactions := block["transactions"].([]interface{})
 		for _, tx := range transactions {
 			txMap := tx.(map[string]interface{})
-			to, ok := txMap["to"].(string)
-			if ok && to != "" {
-				wallets[to] = struct{}{}
+
+			from := txMap["from"].(string)
+			if from != "" {
+				wallets[from] = struct{}{}
+			}
+
+			to := txMap["to"]
+			if to != nil && to.(string) != "" {
+				toAddress := to.(string)
+
+				isContract, err := IsContractAddress(toAddress)
+				if err != nil {
+					continue
+				}
+
+				// check if it is an EOA
+				if !isContract {
+					wallets[toAddress] = struct{}{}
+				}
 			}
 		}
 	}
@@ -98,7 +114,6 @@ func GetSmartContracts(startBlock, endBlock int) ([]kv, error) {
 		return nil, err
 	}
 
-	// Convert map to slice of kv and sort by interactions
 	var sortedContracts []kv
 	for k, v := range contractInteractions {
 		sortedContracts = append(sortedContracts, kv{k, big.NewInt(int64(v))})
@@ -116,7 +131,7 @@ func GetWalletBalances(wallets []string, blockNumber string) (map[string]*big.In
 
 	var wg sync.WaitGroup
 	balanceChannel := make(chan kv, len(wallets))
-	workerPool := make(chan struct{}, 10) // Limit to 8 concurrent goroutines
+	workerPool := make(chan struct{}, 8) // Limit to 8 concurrent goroutines
 
 	// Parallelize balance fetching with worker pool
 	for _, wallet := range wallets {
