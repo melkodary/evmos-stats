@@ -22,3 +22,20 @@ This project is designed to fetch and analyze on-chain statistics from the Evmos
     ```sh
     go run main.go
     ```
+
+
+
+## Assignment Checklist
+
+- [x] Create an open-source (i.e public) GitHub repository to host your project.
+- [x] Create a project that get on-chain statistics using the data between block 100 and 200.
+- [ ] Add tests for the functionality that you created.
+- [x] Add to the README file
+    - [x] Instructions to run the code.
+    - [ ] What were the main technical decisions you made and why you made them.
+    - [ ] Relevant comments about your project and how each of the steps were performed.
+- [x] Implement the solution using GoLang.
+- [ ] Create tests using Behaviour Driven Development
+- [ ] Add a GitHub Action to run a linter (i.e, golang-ci) and tests on pull-requests.
+- [ ] Save the stats to sqlite or a csv files.
+
