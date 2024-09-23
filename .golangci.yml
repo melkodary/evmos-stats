@@ -1,0 +1,27 @@
+linters:
+  enable:
+    - govet
+    - errcheck
+    - staticcheck
+    - unused
+    - ineffassign
+    - gosimple
+    - gocritic
+    - gofmt
+    - goimports
+    - misspell
+    - unconvert
+    - nakedret
+    - gocyclo
+    - dupl
+    - goconst
+    - gocognit
+    - goprintffuncname
+    - gosec
+    - stylecheck
+    - unparam
+    - whitespace
+run:
+  timeout: 5m
+issues:
+  exclude-use-default: false

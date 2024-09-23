@@ -1,3 +1,4 @@
+// Package api provides the HTTP handlers for the API endpoints.
 package api
 
 import (
@@ -16,7 +17,9 @@ func GetSmartContractsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(contractInteractions)
+	if err := json.NewEncoder(w).Encode(contractInteractions); err != nil {
+		http.Error(w, "Error encoding response: "+err.Error(), http.StatusInternalServerError)
+	}
 }
 
 func GetRichestUsersHandler(w http.ResponseWriter, r *http.Request) {
@@ -29,7 +32,9 @@ func GetRichestUsersHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(richestUsers)
+	if err := json.NewEncoder(w).Encode(richestUsers); err != nil {
+		http.Error(w, "Error encoding response: "+err.Error(), http.StatusInternalServerError)
+	}
 }
 
 func GetAccountsHandler(w http.ResponseWriter, r *http.Request) {
@@ -40,7 +45,9 @@ func GetAccountsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(accounts)
+	if err := json.NewEncoder(w).Encode(accounts); err != nil {
+		http.Error(w, "Error encoding response: "+err.Error(), http.StatusInternalServerError)
+	}
 }
 
 func GetBalanceHandler(w http.ResponseWriter, r *http.Request) {
@@ -62,7 +69,9 @@ func GetBalanceHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(balance)
+	if err := json.NewEncoder(w).Encode(balance); err != nil {
+		http.Error(w, "Error encoding response: "+err.Error(), http.StatusInternalServerError)
+	}
 }
 
 func GetBlockHandler(w http.ResponseWriter, r *http.Request) {
@@ -79,7 +88,9 @@ func GetBlockHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(block)
+	if err := json.NewEncoder(w).Encode(block); err != nil {
+		http.Error(w, "Error encoding response: "+err.Error(), http.StatusInternalServerError)
+	}
 }
 
 func GetBlockNumberHandler(w http.ResponseWriter, r *http.Request) {
@@ -90,7 +101,9 @@ func GetBlockNumberHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(blockNumber)
+	if err := json.NewEncoder(w).Encode(blockNumber); err != nil {
+		http.Error(w, "Error encoding response: "+err.Error(), http.StatusInternalServerError)
+	}
 }
 
 func GetTransactionTraceHandler(w http.ResponseWriter, r *http.Request) {
@@ -107,9 +120,13 @@ func GetTransactionTraceHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(trace)
+	if err := json.NewEncoder(w).Encode(trace); err != nil {
+		http.Error(w, "Error encoding response: "+err.Error(), http.StatusInternalServerError)
+	}
 }
 
 func Health(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Hello, World!")
+	if _, err := fmt.Fprintf(w, "Hello, World!"); err != nil {
+		http.Error(w, "Error writing response: "+err.Error(), http.StatusInternalServerError)
+	}
 }

@@ -1,14 +1,22 @@
+// Package client is used to fetch data from Evmos server
 package client
 
 import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 )
 
 type EvmosClient struct {
 	BaseURL string
+}
+
+func closeBody(body io.Closer) {
+	if err := body.Close(); err != nil {
+		fmt.Printf("Error closing response body: %v\n", err)
+	}
 }
 
 func (c *EvmosClient) GetAccounts() ([]string, error) {
@@ -26,7 +34,7 @@ func (c *EvmosClient) GetAccounts() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp.Body)
 
 	var result struct {
 		Result []string `json:"result"`
@@ -53,7 +61,7 @@ func (c *EvmosClient) GetBalance(address string, blockNumber string) (string, er
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp.Body)
 
 	var result struct {
 		Result string `json:"result"`
@@ -80,7 +88,7 @@ func (c *EvmosClient) GetBlockNumber() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp.Body)
 
 	var result struct {
 		Result string `json:"result"`
@@ -107,7 +115,7 @@ func (c *EvmosClient) GetBlock(blockNumber string) (map[string]interface{}, erro
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp.Body)
 
 	var result struct {
 		Result map[string]interface{} `json:"result"`
@@ -134,7 +142,7 @@ func (c *EvmosClient) GetTransactionTrace(txHash string) (map[string]interface{}
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeBody(resp.Body)
 
 	var result struct {
 		Result map[string]interface{} `json:"result"`
@@ -176,7 +184,7 @@ func (c *EvmosClient) GetCode(address, blockNumber string) (string, error) {
 		return "", err
 	}
 
-	defer resp.Body.Close()
+	defer closeBody(resp.Body)
 
 	var result struct {
 		Result string `json:"result"`

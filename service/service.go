@@ -1,3 +1,4 @@
+// Package service provides the business logic for the API endpoints.
 package service
 
 import (
@@ -13,20 +14,20 @@ type kv struct {
 	Value *big.Int
 }
 
-const BASE_URL = "http://localhost:8545"
+const BaseURL = "http://localhost:8545"
 
-var evmos_client *client.EvmosClient = &client.EvmosClient{BaseURL: BASE_URL}
+var evmosClient *client.EvmosClient = &client.EvmosClient{BaseURL: BaseURL}
 
 func GetLatestBlock() (string, error) {
-	return evmos_client.GetBlockNumber()
+	return evmosClient.GetBlockNumber()
 }
 
 func GetTransactionTrace(txHash string) (map[string]interface{}, error) {
-	return evmos_client.GetTransactionTrace(txHash)
+	return evmosClient.GetTransactionTrace(txHash)
 }
 
 func IsContractAddress(address string) (bool, error) {
-	code, err := evmos_client.GetCode(address, "latest")
+	code, err := evmosClient.GetCode(address, "latest")
 	if err != nil {
 		return false, err
 	}
@@ -118,7 +119,7 @@ func ExtractWallets(blocks []map[string]interface{}) []string {
 }
 
 func GetSmartContracts(startBlock, endBlock int) ([]kv, error) {
-	blocks, err := evmos_client.GetBlocksInRange(startBlock, endBlock)
+	blocks, err := evmosClient.GetBlocksInRange(startBlock, endBlock)
 	if err != nil {
 		return nil, err
 	}
@@ -156,7 +157,7 @@ func GetWalletBalances(wallets []string, blockNumber string) (map[string]*big.In
 			defer wg.Done()
 			defer func() { <-workerPool }()
 
-			balance, err := evmos_client.GetBalance(wallet, blockNumber)
+			balance, err := evmosClient.GetBalance(wallet, blockNumber)
 			if err == nil {
 				balanceInt := new(big.Int)
 				balanceInt.SetString(balance[2:], 16) // Convert hex string to big.Int
@@ -180,7 +181,7 @@ func GetWalletBalances(wallets []string, blockNumber string) (map[string]*big.In
 }
 
 func CalculateRichestUsers(startBlock, endBlock int) ([]kv, error) {
-	blocks, err := evmos_client.GetBlocksInRange(startBlock, endBlock)
+	blocks, err := evmosClient.GetBlocksInRange(startBlock, endBlock)
 	if err != nil {
 		return nil, err
 	}
@@ -206,11 +207,11 @@ func CalculateRichestUsers(startBlock, endBlock int) ([]kv, error) {
 }
 
 func GetAccounts() ([]string, error) {
-	return evmos_client.GetAccounts()
+	return evmosClient.GetAccounts()
 }
 
 func GetBalance(address, block string) (string, error) {
-	balance, err := evmos_client.GetBalance(address, block)
+	balance, err := evmosClient.GetBalance(address, block)
 	if err != nil {
 		return "", err
 	}
@@ -219,7 +220,7 @@ func GetBalance(address, block string) (string, error) {
 }
 
 func GetBlock(blockNumber string) (map[string]interface{}, error) {
-	block, err := evmos_client.GetBlock(blockNumber)
+	block, err := evmosClient.GetBlock(blockNumber)
 	if err != nil {
 		return nil, err
 	}
