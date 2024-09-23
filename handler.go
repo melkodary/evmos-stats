@@ -20,7 +20,7 @@ func getSmartContractsHandler(w http.ResponseWriter, r *http.Request) {
 
 func getRichestUsersHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO: get blocks range from query params
-	sortedWallets, err := CalculateRichestUsers(100, 200)
+	richestUsers, err := CalculateRichestUsers(100, 200)
 
 	if err != nil {
 		http.Error(w, "Error fetching richest users: "+err.Error(), http.StatusInternalServerError)
@@ -28,7 +28,7 @@ func getRichestUsersHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(sortedWallets)
+	json.NewEncoder(w).Encode(richestUsers)
 }
 
 func getAccountsHandler(w http.ResponseWriter, r *http.Request) {

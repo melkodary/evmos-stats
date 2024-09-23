@@ -4,11 +4,17 @@ import (
 	"fmt"
 	"math/big"
 	"sort"
+	"sync"
 )
+
+type kv struct {
+	Key   string
+	Value *big.Int
+}
 
 const BASE_URL = "http://localhost:8545"
 
-var evmos_client *EmvosClient = &EmvosClient{BaseURL: BASE_URL}
+var evmos_client *EvmosClient = &EvmosClient{BaseURL: BASE_URL}
 
 func GetLatestBlock() (string, error) {
 	return evmos_client.GetBlockNumber()
@@ -18,19 +24,20 @@ func GetTransactionTrace(txHash string) (map[string]interface{}, error) {
 	return evmos_client.GetTransactionTrace(txHash)
 }
 
-func ExtractSmartContracts(blocks []map[string]interface{}) map[string]int {
+func ExtractSmartContracts(blocks []map[string]interface{}) (map[string]int, error) {
 	contractInteractions := make(map[string]int)
 	for _, block := range blocks {
 		transactions := block["transactions"].([]interface{})
 		for _, tx := range transactions {
 			txMap := tx.(map[string]interface{})
-			to := txMap["to"].(string)
-			if to != "" {
+			to, ok := txMap["contractAddress"].(string)
+			if ok && to != "" {
 				contractInteractions[to]++
 			}
 		}
 	}
-	return contractInteractions
+
+	return contractInteractions, nil
 }
 
 func ExtractWallets(blocks []map[string]interface{}) []string {
@@ -39,8 +46,8 @@ func ExtractWallets(blocks []map[string]interface{}) []string {
 		transactions := block["transactions"].([]interface{})
 		for _, tx := range transactions {
 			txMap := tx.(map[string]interface{})
-			to := txMap["to"].(string)
-			if to != "" {
+			to, ok := txMap["to"].(string)
+			if ok && to != "" {
 				wallets[to] = struct{}{}
 			}
 		}
@@ -53,32 +60,69 @@ func ExtractWallets(blocks []map[string]interface{}) []string {
 	return walletList
 }
 
-func GetSmartContracts(startBlock, endBlock int) (map[string]int, error) {
+func GetSmartContracts(startBlock, endBlock int) ([]kv, error) {
 	blocks, err := evmos_client.GetBlocksInRange(startBlock, endBlock)
 	if err != nil {
 		return nil, err
 	}
 
-	contractInteractions := ExtractSmartContracts(blocks)
+	contractInteractions, err := ExtractSmartContracts(blocks)
+	if err != nil {
+		return nil, err
+	}
 
-	return contractInteractions, nil
+	// Convert map to slice of kv and sort by interactions
+	var sortedContracts []kv
+	for k, v := range contractInteractions {
+		sortedContracts = append(sortedContracts, kv{k, big.NewInt(int64(v))})
+	}
+
+	sort.Slice(sortedContracts, func(i, j int) bool {
+		return sortedContracts[i].Value.Cmp(sortedContracts[j].Value) > 0
+	})
+
+	return sortedContracts, nil
 }
 
 func GetWalletBalances(wallets []string, blockNumber string) (map[string]*big.Int, error) {
 	balances := make(map[string]*big.Int)
+
+	var wg sync.WaitGroup
+	balanceChannel := make(chan kv, len(wallets))
+	workerPool := make(chan struct{}, 8) // Limit to 8 concurrent goroutines
+
+	// Parallelize balance fetching
 	for _, wallet := range wallets {
-		balance, err := evmos_client.GetBalance(wallet, blockNumber)
-		if err != nil {
-			return nil, err
-		}
-		balanceInt := new(big.Int)
-		balanceInt.SetString(balance[2:], 16) // Convert hex string to big.Int
-		balances[wallet] = balanceInt
+		wg.Add(1)
+		workerPool <- struct{}{}
+		go func(wallet string) {
+			defer wg.Done()
+			defer func() { <-workerPool }()
+
+			balance, err := evmos_client.GetBalance(wallet, blockNumber)
+			if err == nil {
+				balanceInt := new(big.Int)
+				balanceInt.SetString(balance[2:], 16) // Convert hex string to big.Int
+				balanceChannel <- kv{wallet, balanceInt}
+			}
+		}(wallet)
 	}
+
+	// Close the channel once all balances are fetched
+	go func() {
+		wg.Wait()
+		close(balanceChannel)
+	}()
+
+	// Collect results from channel
+	for walletBalance := range balanceChannel {
+		balances[walletBalance.Key] = walletBalance.Value
+	}
+
 	return balances, nil
 }
 
-func CalculateRichestUsers(startBlock, endBlock int) (map[string]*big.Int, error) {
+func CalculateRichestUsers(startBlock, endBlock int) ([]kv, error) {
 	blocks, err := evmos_client.GetBlocksInRange(startBlock, endBlock)
 	if err != nil {
 		return nil, err
@@ -91,11 +135,7 @@ func CalculateRichestUsers(startBlock, endBlock int) (map[string]*big.Int, error
 		return nil, err
 	}
 
-	type kv struct {
-		Key   string
-		Value *big.Int
-	}
-
+	// Sort wallets by balance
 	var sortedWallets []kv
 	for k, v := range balances {
 		sortedWallets = append(sortedWallets, kv{k, v})
@@ -105,7 +145,7 @@ func CalculateRichestUsers(startBlock, endBlock int) (map[string]*big.Int, error
 		return sortedWallets[i].Value.Cmp(sortedWallets[j].Value) > 0
 	})
 
-	return balances, nil
+	return sortedWallets, nil
 }
 
 func GetAccounts() ([]string, error) {
@@ -113,10 +153,6 @@ func GetAccounts() ([]string, error) {
 }
 
 func GetBalance(address, block string) (string, error) {
-	if block == "" {
-		block = "latest"
-	}
-
 	balance, err := evmos_client.GetBalance(address, block)
 	if err != nil {
 		return "", err
