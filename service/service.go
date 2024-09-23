@@ -1,8 +1,9 @@
-package main
+package service
 
 import (
 	"fmt"
 	"math/big"
+	"onchain-stats/client"
 	"sort"
 	"sync"
 )
@@ -14,14 +15,24 @@ type kv struct {
 
 const BASE_URL = "http://localhost:8545"
 
-var evmos_client *EvmosClient = &EvmosClient{BaseURL: BASE_URL}
+var evmos_client *client.EvmosClient = &client.EvmosClient{BaseURL: BASE_URL}
 
 func GetLatestBlock() (string, error) {
 	return evmos_client.GetBlockNumber()
 }
 
+// TODO not really utilized.
 func GetTransactionTrace(txHash string) (map[string]interface{}, error) {
 	return evmos_client.GetTransactionTrace(txHash)
+}
+
+func IsContractAddress(address string) (bool, error) {
+	code, err := evmos_client.GetCode(address, "latest")
+	if err != nil {
+		return false, err
+	}
+
+	return code != "0x", nil
 }
 
 func ExtractSmartContracts(blocks []map[string]interface{}) (map[string]int, error) {
@@ -30,9 +41,25 @@ func ExtractSmartContracts(blocks []map[string]interface{}) (map[string]int, err
 		transactions := block["transactions"].([]interface{})
 		for _, tx := range transactions {
 			txMap := tx.(map[string]interface{})
-			to, ok := txMap["contractAddress"].(string)
-			if ok && to != "" {
-				contractInteractions[to]++
+			to := txMap["to"]
+
+			// Check if it's a contract creation
+			if to == nil {
+				contractAddress := txMap["contractAddress"]
+				if contractAddress != nil && contractAddress != "" {
+					contractAddrStr := contractAddress.(string)
+					contractInteractions[contractAddrStr]++
+				}
+			} else {
+				// If it's not a contract creation, check if 'to' address is a smart contract
+				toAddress := to.(string)
+				isContract, err := IsContractAddress(toAddress)
+				if err != nil {
+					return nil, err
+				}
+				if isContract {
+					contractInteractions[toAddress]++
+				}
 			}
 		}
 	}
@@ -89,9 +116,9 @@ func GetWalletBalances(wallets []string, blockNumber string) (map[string]*big.In
 
 	var wg sync.WaitGroup
 	balanceChannel := make(chan kv, len(wallets))
-	workerPool := make(chan struct{}, 8) // Limit to 8 concurrent goroutines
+	workerPool := make(chan struct{}, 10) // Limit to 8 concurrent goroutines
 
-	// Parallelize balance fetching
+	// Parallelize balance fetching with worker pool
 	for _, wallet := range wallets {
 		wg.Add(1)
 		workerPool <- struct{}{}

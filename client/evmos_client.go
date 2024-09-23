@@ -1,4 +1,4 @@
-package main
+package client
 
 import (
 	"bytes"
@@ -157,4 +157,33 @@ func (c *EvmosClient) GetBlocksInRange(start, end int) ([]map[string]interface{}
 		blocks = append(blocks, block)
 	}
 	return blocks, nil
+}
+
+func (c *EvmosClient) GetCode(address, blockNumber string) (string, error) {
+	requestBody, err := json.Marshal(map[string]interface{}{
+		"method":  "eth_getCode",
+		"params":  []interface{}{address, blockNumber},
+		"id":      1,
+		"jsonrpc": "2.0",
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	resp, err := http.Post(c.BaseURL, "application/json", bytes.NewBuffer(requestBody))
+	if err != nil {
+		return "", err
+	}
+
+	defer resp.Body.Close()
+
+	var result struct {
+		Result string `json:"result"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return "", err
+	}
+
+	return result.Result, nil
 }

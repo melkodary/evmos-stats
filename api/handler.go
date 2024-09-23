@@ -1,13 +1,14 @@
-package main
+package api
 
 import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"onchain-stats/service"
 )
 
-func getSmartContractsHandler(w http.ResponseWriter, r *http.Request) {
-	contractInteractions, err := GetSmartContracts(100, 200)
+func GetSmartContractsHandler(w http.ResponseWriter, r *http.Request) {
+	contractInteractions, err := service.GetSmartContracts(100, 200)
 
 	if err != nil {
 		http.Error(w, "Error fetching smart contracts: "+err.Error(), http.StatusInternalServerError)
@@ -18,9 +19,9 @@ func getSmartContractsHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(contractInteractions)
 }
 
-func getRichestUsersHandler(w http.ResponseWriter, r *http.Request) {
+func GetRichestUsersHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO: get blocks range from query params
-	richestUsers, err := CalculateRichestUsers(100, 200)
+	richestUsers, err := service.CalculateRichestUsers(100, 200)
 
 	if err != nil {
 		http.Error(w, "Error fetching richest users: "+err.Error(), http.StatusInternalServerError)
@@ -31,8 +32,8 @@ func getRichestUsersHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(richestUsers)
 }
 
-func getAccountsHandler(w http.ResponseWriter, r *http.Request) {
-	accounts, err := GetAccounts()
+func GetAccountsHandler(w http.ResponseWriter, r *http.Request) {
+	accounts, err := service.GetAccounts()
 	if err != nil {
 		http.Error(w, "Error fetching accounts: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -42,7 +43,7 @@ func getAccountsHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(accounts)
 }
 
-func getBalanceHandler(w http.ResponseWriter, r *http.Request) {
+func GetBalanceHandler(w http.ResponseWriter, r *http.Request) {
 	address := r.URL.Query().Get("address")
 	block := r.URL.Query().Get("block")
 	if block == "" {
@@ -54,7 +55,7 @@ func getBalanceHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	balance, err := GetBalance(address, block)
+	balance, err := service.GetBalance(address, block)
 	if err != nil {
 		http.Error(w, "Error fetching balance: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -64,14 +65,14 @@ func getBalanceHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(balance)
 }
 
-func getBlockHandler(w http.ResponseWriter, r *http.Request) {
+func GetBlockHandler(w http.ResponseWriter, r *http.Request) {
 	blockNumber := r.URL.Query().Get("blockNumber")
 	if blockNumber == "" {
 		http.Error(w, "Missing blockNumber", http.StatusBadRequest)
 		return
 	}
 
-	block, err := GetBlock(blockNumber)
+	block, err := service.GetBlock(blockNumber)
 	if err != nil {
 		http.Error(w, "Error fetching block: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -81,8 +82,8 @@ func getBlockHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(block)
 }
 
-func getBlockNumberHandler(w http.ResponseWriter, r *http.Request) {
-	blockNumber, err := GetLatestBlock()
+func GetBlockNumberHandler(w http.ResponseWriter, r *http.Request) {
+	blockNumber, err := service.GetLatestBlock()
 	if err != nil {
 		http.Error(w, "Error fetching block number: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -92,14 +93,14 @@ func getBlockNumberHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(blockNumber)
 }
 
-func getTransactionTraceHandler(w http.ResponseWriter, r *http.Request) {
+func GetTransactionTraceHandler(w http.ResponseWriter, r *http.Request) {
 	txHash := r.URL.Query().Get("txHash")
 	if txHash == "" {
 		http.Error(w, "Missing txHash", http.StatusBadRequest)
 		return
 	}
 
-	trace, err := GetTransactionTrace(txHash)
+	trace, err := service.GetTransactionTrace(txHash)
 	if err != nil {
 		http.Error(w, "Error fetching transaction trace: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -109,6 +110,6 @@ func getTransactionTraceHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(trace)
 }
 
-func health(w http.ResponseWriter, r *http.Request) {
+func Health(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Hello, World!")
 }
