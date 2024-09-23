@@ -4,19 +4,30 @@ package service
 import (
 	"fmt"
 	"math/big"
-	"onchain-stats/client"
 	"sort"
 	"sync"
 )
+
+type EvmosClientInterface interface {
+	GetBlockNumber() (string, error)
+	GetTransactionTrace(txHash string) (map[string]interface{}, error)
+	GetCode(address, blockNumber string) (string, error)
+	GetBlocksInRange(start, end int) ([]map[string]interface{}, error)
+	GetBalance(address, block string) (string, error)
+	GetAccounts() ([]string, error)
+	GetBlock(blockNumber string) (map[string]interface{}, error)
+}
 
 type kv struct {
 	Key   string
 	Value *big.Int
 }
 
-const BaseURL = "http://localhost:8545"
+var evmosClient EvmosClientInterface
 
-var evmosClient *client.EvmosClient = &client.EvmosClient{BaseURL: BaseURL}
+func SetClient(client EvmosClientInterface) {
+	evmosClient = client
+}
 
 func GetLatestBlock() (string, error) {
 	return evmosClient.GetBlockNumber()
