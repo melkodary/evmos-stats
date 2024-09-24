@@ -14,7 +14,7 @@ type MockEvmosClient struct {
 	transactionTrace map[string]interface{}
 	code             map[string]string
 	blocksInRange    []map[string]interface{}
-	balance          string
+	balances         map[string]string
 }
 
 func (m *MockEvmosClient) GetAccounts() ([]string, error) {
@@ -45,7 +45,10 @@ func (m *MockEvmosClient) GetBlocksInRange(startBlock, endBlock int) ([]map[stri
 }
 
 func (m *MockEvmosClient) GetBalance(address, block string) (string, error) {
-	return m.balance, nil
+	if balance, exists := m.balances[address]; exists {
+		return balance, nil
+	}
+	return "0x0", nil
 }
 
 func TestGetLatestBlock(t *testing.T) {
@@ -143,5 +146,62 @@ func TestGetSmartContracts(t *testing.T) {
 
 	for i, expectedContract := range expectedContracts {
 		assert.Equal(t, expectedContract.Key, contracts[i].Key)
+	}
+}
+
+func TestCalculateRichestUsers(t *testing.T) {
+	client := &MockEvmosClient{
+		blocksInRange: []map[string]interface{}{
+			{
+				"transactions": []interface{}{
+					map[string]interface{}{
+						"hash": "0xTxHash1",
+						"from": "0xWallet1",
+						"to":   "0xWallet2",
+					},
+					map[string]interface{}{
+						"hash": "0xTxHash2",
+						"from": "0xWallet3",
+						"to":   "0xWallet4",
+					},
+				},
+			},
+		},
+		code: map[string]string{
+			"0xWallet1": "0x",
+			"0xWallet2": "0x",
+			"0xWallet3": "0x",
+			"0xWallet4": "0x",
+		},
+		balances: map[string]string{
+			"0xWallet1": "0x5",
+			"0xWallet2": "0x3",
+			"0xWallet3": "0x8",
+			"0xWallet4": "0x1",
+		},
+	}
+
+	SetClient(client)
+
+	expectedWallets := []kv{
+		{"0xWallet3", big.NewInt(8)},
+		{"0xWallet1", big.NewInt(5)},
+		{"0xWallet2", big.NewInt(3)},
+		{"0xWallet4", big.NewInt(1)},
+	}
+
+	wallets, err := CalculateRichestUsers(100, 200)
+	assert.NoError(t, err)
+	assert.Equal(t, len(expectedWallets), len(wallets))
+
+	expectedMap := make(map[string]*big.Int)
+	for _, wallet := range expectedWallets {
+		expectedMap[wallet.Key] = wallet.Value
+	}
+
+	for _, wallet := range wallets {
+		expectedValue, exists := expectedMap[wallet.Key]
+		assert.True(t, exists, "Unexpected wallet: %s", wallet.Key)
+		assert.Equal(t, 0, expectedValue.Cmp(wallet.Value), "Value mismatch for wallet %s: expected %s, got %s", wallet.Key, expectedValue.String(), wallet.Value.String())
 	}
 }
