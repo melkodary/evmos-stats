@@ -33,4 +33,4 @@ jobs:
         go-version: '1.21'
 
     - name: Run tests
-      run: go test ./service/service_test.go -v
+      run: go test ./service -v

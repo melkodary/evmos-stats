@@ -137,15 +137,15 @@ func TestGetSmartContracts(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, len(expectedContracts), len(contracts))
 
-	for i, contract := range contracts {
-		assert.Equal(t, expectedContracts[i].Key, contract.Key)
-		if expectedContracts[i].Value.Cmp(contract.Value) != 0 {
-			t.Errorf("Value mismatch for contract %s: expected %s, got %s", contract.Key, expectedContracts[i].Value.String(), contract.Value.String())
-		}
+	expectedMap := make(map[string]*big.Int)
+	for _, expectedContract := range expectedContracts {
+		expectedMap[expectedContract.Key] = expectedContract.Value
 	}
 
-	for i, expectedContract := range expectedContracts {
-		assert.Equal(t, expectedContract.Key, contracts[i].Key)
+	for _, contract := range contracts {
+		expectedValue, exists := expectedMap[contract.Key]
+		assert.True(t, exists, "Unexpected contract: %s", contract.Key)
+		assert.Equal(t, 0, expectedValue.Cmp(contract.Value), "Value mismatch for contract %s: expected %s, got %s", contract.Key, expectedValue.String(), contract.Value.String())
 	}
 }
 
