@@ -190,7 +190,7 @@ func TestCalculateRichestUsers(t *testing.T) {
 		{"0xWallet4", big.NewInt(1)},
 	}
 
-	wallets, err := CalculateRichestUsers(100, 200)
+	wallets, err := CalculateRichestUsers(200)
 	assert.NoError(t, err)
 	assert.Equal(t, len(expectedWallets), len(wallets))
 
