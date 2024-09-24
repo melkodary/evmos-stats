@@ -37,7 +37,7 @@ func (m *MockEvmosClient) GetCode(address, blockNumber string) (string, error) {
 	if code, exists := m.code[address]; exists {
 		return code, nil
 	}
-	return "", nil
+	return "0x", nil
 }
 
 func (m *MockEvmosClient) GetBlocksInRange(startBlock, endBlock int) ([]map[string]interface{}, error) {
