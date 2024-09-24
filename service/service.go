@@ -25,6 +25,7 @@ type kv struct {
 
 var evmosClient EvmosClientInterface
 
+// SetClient Utilized for testing purposes, but can be used to set a custom client
 func SetClient(client EvmosClientInterface) {
 	evmosClient = client
 }
@@ -37,6 +38,7 @@ func GetTransactionTrace(txHash string) (map[string]interface{}, error) {
 	return evmosClient.GetTransactionTrace(txHash)
 }
 
+// IsContractAddress checks if the given address is a contract address or an EOA.
 func IsContractAddress(address string) (bool, error) {
 	code, err := evmosClient.GetCode(address, "latest")
 	if err != nil {
@@ -46,6 +48,9 @@ func IsContractAddress(address string) (bool, error) {
 	return code != "0x", nil
 }
 
+// ExtractSmartContracts processes a list of blocks to identify and count interactions with smart contracts.
+// It iterates through each block's transactions, checking if the transaction is a contract creation or an interaction with an existing contract.
+// It also traces internal contract calls within each transaction.
 func ExtractSmartContracts(blocks []map[string]interface{}) (map[string]int, error) {
 	contractInteractions := make(map[string]int)
 	for _, block := range blocks {
@@ -93,6 +98,8 @@ func ExtractSmartContracts(blocks []map[string]interface{}) (map[string]int, err
 	return contractInteractions, nil
 }
 
+// ExtractWallets processes a list of blocks to identify unique wallets that have interacted with the blockchain.
+// It iterates through each block's transactions, checking the sender and receiver of each transaction.
 func ExtractWallets(blocks []map[string]interface{}) []string {
 	wallets := make(map[string]struct{})
 	for _, block := range blocks {
@@ -191,14 +198,16 @@ func GetWalletBalances(wallets []string, blockNumber string) (map[string]*big.In
 	return balances, nil
 }
 
-func CalculateRichestUsers(startBlock, endBlock int) ([]kv, error) {
-	blocks, err := evmosClient.GetBlocksInRange(startBlock, endBlock)
+// CalculateRichestUsers calculates the richest users based on their wallet balances at the end block.
+// It only needs the last block, since the last block contains the most up-to-date balances of all wallets.
+func CalculateRichestUsers(block int) ([]kv, error) {
+	blocks, err := evmosClient.GetBlocksInRange(block, block)
 	if err != nil {
 		return nil, err
 	}
 
 	wallets := ExtractWallets(blocks)
-	balances, err := GetWalletBalances(wallets, fmt.Sprintf("0x%x", endBlock))
+	balances, err := GetWalletBalances(wallets, fmt.Sprintf("0x%x", block))
 
 	if err != nil {
 		return nil, err

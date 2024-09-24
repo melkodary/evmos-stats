@@ -23,6 +23,13 @@ This project is designed to fetch and analyze on-chain statistics from the Evmos
     go run main.go
     ```
 
+## Technical Decisions
+1. **Concurrency with Goroutines**: Utilized goroutines to fetch wallet balances concurrently, reducing the overall execution time.
+2. **Mocked Data**: Evmos endpoint for blocks, always returned an empty transaction list. To test the application, 
+I created a mock data with transactions between blocks 100 and 200, and assumed the response of `transcation_tracer`.
+3. **Save stats to csv \& BDD**: I did not have enough time to implement them.
+
+
 ## Assignment Checklist
 
 - [x] Create an open-source (i.e public) GitHub repository to host your project.
@@ -30,10 +37,9 @@ This project is designed to fetch and analyze on-chain statistics from the Evmos
 - [x] Add tests for the functionality that you created.
 - [x] Add to the README file
     - [x] Instructions to run the code.
-    - [ ] What were the main technical decisions you made and why you made them.
-    - [ ] Relevant comments about your project and how each of the steps were performed.
+    - [x] What were the main technical decisions you made and why you made them.
+    - [x] Relevant comments about your project and how each of the steps were performed.
 - [x] Implement the solution using GoLang.
-- [ ] Create tests using Behaviour Driven Development
 - [x] Add a GitHub Action to run a linter (i.e, golang-ci) and tests on pull-requests.
+- [ ] Create tests using Behaviour Driven Development
 - [ ] Save the stats to sqlite or a csv files.
-

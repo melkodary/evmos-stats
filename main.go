@@ -28,7 +28,7 @@ func GetSmartContractsHandler(w http.ResponseWriter, r *http.Request) {
 
 func GetRichestUsersHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO: get blocks range from query params
-	richestUsers, err := service.CalculateRichestUsers(100, 200)
+	richestUsers, err := service.CalculateRichestUsers(200)
 
 	if err != nil {
 		http.Error(w, "Error fetching richest users: "+err.Error(), http.StatusInternalServerError)
