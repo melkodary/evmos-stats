@@ -5,6 +5,23 @@ This project is designed to fetch and analyze on-chain statistics from the Evmos
 1. List all the smart contracts that were used between block 100 and 200 and sort them by the amount of interactions.
 2. Of all the wallets that interacted with the network, sort them by balance to find the richest user.
 
+## Project Structure
+The project is structured as follows:
+- `main.go`: The entry point of the application.
+- `evmos_client.go`: Contains the client to interact with the Evmos node.
+- `service.go`: Contains the service to fetch and analyze on-chain statistics.
+
+#### Support several endpoints:
+
+- **/**: For health check
+- **accounts**: Returns the list of accounts found in a local node of evmos. Not really utilized. Just there for testing purposes.
+- **balance**: Returns the balance of a specific account at a specific block (Default latest).
+- **blocknumber**: Returns the block number of the latest block.
+- **block**: Returns the block information of a specific block number.
+- **transactiontrace**: Returns the transaction trace of a specific transaction hash.
+- **smartcontracts**: Retrieves the interactions of smart contracts used between block 100 and 200.
+- **richestusers**: Calculates the richest users based on their wallet balances at block 200.
+
 ## Prerequisites
 
 - Go 1.21 or later
